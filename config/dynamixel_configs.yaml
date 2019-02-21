@@ -1,0 +1,27 @@
+DynamixelConfigs:
+  port: '/dev/ttyUSB0'
+  baud_rate: 1000000
+  scan_range: 10
+  operation_mode: 'VelocityMode'
+
+  joint1:
+    ID: 1
+    
+  joint2:
+    ID: 2
+
+  joint3:
+    ID: 3
+
+  joint4:
+    ID: 4
+
+  joint5:
+    ID: 5
+
+  joint6:
+    ID: 6
+
+  joint7:
+    ID: 7
+

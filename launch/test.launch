@@ -1,0 +1,6 @@
+<launch>
+  <param name="dynamixel_info" value="$(find dynamixel_hardware)/config/dynamixel_configs.yaml"/>
+
+  <node name="test" pkg="dynamixel_hardware" type="test_node"
+        required="true" output="screen"/>
+</launch>
