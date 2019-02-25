@@ -7,54 +7,49 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
 {
   m_pDxl_wb = new DynamixelWorkbench;
 
-  std::string yamlfile_name;
-  if (!nh.getParam("dynamixel_info", yamlfile_name))
+  if (!nh.hasParam("DynamixelConfigs"))
   {
-    ROS_WARN("Didn't have dynamixel_info parameter");
+    ROS_WARN("Didn't have DynamixelConfigs parameter");
     return;
   }
 
-  YAML::Node yaml_node;
-  yaml_node = YAML::LoadFile(yamlfile_name.c_str());
-
-  if (yaml_node == NULL)
-  {
-    ROS_WARN_STREAM("Didn't have " + yamlfile_name + " this file");
-    return;
-  }
-
-  YAML::Node InfoItem = yaml_node["DynamixelConfigs"];
+  ros::NodeHandle Config_nh(m_private_nh, "DynamixelConfigs");
 
   BOOST_FOREACH(const std::string&motor_name, motor_names)
   {
-    YAML::Node joint_item = InfoItem[motor_name];
-    for (YAML::const_iterator it_item = joint_item.begin(); it_item != joint_item.end(); it_item++)
+    if (nh.hasParam(motor_name))
     {
-      std::string item_name = it_item->first.as<std::string>();
-      uint32_t id = it_item->second.as<uint32_t>();
-      DynamixelInfoList infolist;
-      infolist.id = id;
-
-      if (item_name == "ID")
+      ros::NodeHandle motor_nh(Config_nh, motor_name);
+      int id;
+      if (motor_nh.getParam("ID", id))
       {
-        ROS_INFO_STREAM("find Item:" + item_name + ", ID:" + std::to_string(id));
-        m_DxlMap[item_name] = infolist;
+        DynamixelInfoList infolist;
+        infolist.id = (uint32_t)id;
+        m_DxlMap[motor_name] = infolist;
       }
+      else
+      {
+        ROS_WARN_STREAM("Motor:" + motor_name + " didn't have ID");
+      }
+    }
+    else
+    {
+      ROS_WARN_STREAM("Not found " + motor_name + "in DynamixelConfigs");
+      continue;
     }
   }
 
   ROS_INFO_STREAM("Find " + std::to_string(m_DxlMap.size()) + "ID count");
 
-  ros::NodeHandle dynamixel_config_nh(m_private_nh, "DynamixelConfigs");
   std::string port;
   int baud_rate;
-  if (!dynamixel_config_nh.getParam("port", port))
+  if (!Config_nh.getParam("port", port))
   {
     ROS_ERROR("Didn't have port parameter");
     return;
   }
 
-  if (!dynamixel_config_nh.getParam("baud_rate", baud_rate))
+  if (!Config_nh.getParam("baud_rate", baud_rate))
   {
     ROS_ERROR("Didn't have baud_rate parameter");
     return;
@@ -68,7 +63,7 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
 
   //ros::NodeHandle dynamixel_config_nh(m_private_nh, "DynamixelConfigs");
   std::string operation_mode;
-  if (dynamixel_config_nh.getParam("operation_mode", operation_mode))
+  if (Config_nh.getParam("operation_mode", operation_mode))
   {
     if (operation_mode == "PositionMode")
     {
