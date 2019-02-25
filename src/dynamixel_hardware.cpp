@@ -23,9 +23,11 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
     return;
   }
 
-  for (auto const& motor_name:motor_names)
+  YAML::Node InfoItem = yaml_node["DynamixelConfigs"];
+
+  BOOST_FOREACH(const std::string&motor_name, motor_names)
   {
-    YAML::Node joint_item = yaml_node[motor_name];
+    YAML::Node joint_item = InfoItem[motor_name];
     for (YAML::const_iterator it_item = joint_item.begin(); it_item != joint_item.end(); it_item++)
     {
       std::string item_name = it_item->first.as<std::string>();
@@ -35,26 +37,36 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
 
       if (item_name == "ID")
       {
+        ROS_INFO_STREAM("find Item:" + item_name + ", ID:" + std::to_string(id));
         m_DxlMap[item_name] = infolist;
       }
     }
   }
 
+  ROS_INFO_STREAM("Find " + std::to_string(m_DxlMap.size()) + "ID count");
+
+  ros::NodeHandle dynamixel_config_nh(m_private_nh, "DynamixelConfigs");
   std::string port;
   int baud_rate;
-  if (!m_nh.getParam("port", port))
+  if (!dynamixel_config_nh.getParam("port", port))
   {
     ROS_ERROR("Didn't have port parameter");
     return;
   }
 
-  if (!m_nh.getParam("baud_rate", baud_rate))
+  if (!dynamixel_config_nh.getParam("baud_rate", baud_rate))
   {
     ROS_ERROR("Didn't have baud_rate parameter");
     return;
   }
+  const char *log;
 
-  ros::NodeHandle dynamixel_config_nh(m_private_nh, "DynamixelConfigs");
+  if (!m_pDxl_wb->begin(port.c_str(), baud_rate, &log))
+  {
+    ROS_ERROR_STREAM("Port:" + port + ", Baud Rate:" + std::to_string(baud_rate) + ", Begin Failed");
+  }
+
+  //ros::NodeHandle dynamixel_config_nh(m_private_nh, "DynamixelConfigs");
   std::string operation_mode;
   if (dynamixel_config_nh.getParam("operation_mode", operation_mode))
   {
@@ -78,7 +90,11 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
 
 bool CDynamixelHardware::init()
 {
-  if (m_valid == false) return false;
+  if (m_valid == false)
+  {
+    ROS_WARN("Dynamixelworkbench invalid");
+    return false;
+  } 
 
   const char* log;
 

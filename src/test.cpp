@@ -14,6 +14,11 @@ int main(int argc, char** argv)
     motor_names.push_back(argv[index+1]);
   }
 
+  BOOST_FOREACH(const std::string&name, motor_names)
+  {
+    ROS_INFO_STREAM("Name:" + name);
+  }
+
   CDynamixelHardware dynamixelhardware(nh, pnh, motor_names);
 
   if (!dynamixelhardware.init())

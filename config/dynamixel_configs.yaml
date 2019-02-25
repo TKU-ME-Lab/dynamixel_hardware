@@ -1,5 +1,5 @@
 DynamixelConfigs:
-  port: '/dev/ttyUSB0'
+  port: '/dev/U2D_AL02L2KI'
   baud_rate: 1000000
   scan_range: 10
   operation_mode: 'VelocityMode'
@@ -24,4 +24,3 @@ DynamixelConfigs:
 
   joint7:
     ID: 7
-
