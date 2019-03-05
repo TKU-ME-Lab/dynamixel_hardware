@@ -32,6 +32,9 @@ typedef struct{
 class CDynamixelHardware: public hardware_interface::RobotHW
 {
 private:
+  typedef std::map<std::string, DynamixelInfoList> DynamixelInfoMap;
+  typedef std::map<std::string, const ControlItem*> ControlItemMap;
+
   ros::NodeHandle m_nh;
   ros::NodeHandle m_private_nh;
   
@@ -41,8 +44,8 @@ private:
   //hardware_interface::EffortActuatorInterface m_aei;
   
   DynamixelWorkbench* m_pDxl_wb;
-  std::map<std::string, DynamixelInfoList> m_DxlMap;
-  std::map<std::string, const ControlItem*> m_control_items;
+  DynamixelInfoMap m_DxlMap;
+  ControlItemMap m_control_items;
 
   uint8_t m_dxl_id[10];
   uint8_t m_dxl_count;

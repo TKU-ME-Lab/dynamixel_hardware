@@ -93,41 +93,39 @@ bool CDynamixelHardware::init()
 
   const char* log;
 
-  for (auto const& dxl:m_DxlMap)
+  for (DynamixelInfoMap::iterator iter = m_DxlMap.begin(); iter != m_DxlMap.end(); iter++)
   {
     uint16_t model_number = 0;
-    if (m_pDxl_wb->ping((uint8_t)dxl.second.id, &model_number, &log))
+    if (m_pDxl_wb->ping((uint8_t)iter->second.id, &model_number, &log))
     {
       ROS_ERROR("%s", log);
-      ROS_ERROR("Can't find Dynamixel ID '%d'", dxl.second.id);
+      ROS_ERROR("Can't find Dynamixel ID '%d'", iter->second.id);
       return false;
     }
     else
     {
-      ROS_INFO("Name: %s, ID: %d, Model Number: %d", dxl.first.c_str(), dxl.second.id, model_number);
-    }
-  }
+      ROS_INFO("Name: %s, ID: %d, Model Number: %d", iter->first.c_str(), iter->second.id, model_number);
 
-  for (auto const& dxl:m_DxlMap)
-  {
-    if (m_OperationMode == POSITION_CONTROL_MODE)
-    {
-      if (!m_pDxl_wb->setPositionControlMode((uint8_t)dxl.second.id, &log))
+      if (m_OperationMode == POSITION_CONTROL_MODE)
       {
-        ROS_ERROR("%s", log);
-        ROS_ERROR("ID: '%d', Can't Set Position Mode", dxl.second.id);
-        return false;
+        if (!m_pDxl_wb->setPositionControlMode((uint8_t)iter->second.id, &log))
+        {
+          ROS_ERROR("%s", log);
+          ROS_ERROR("ID: '%d', Can't Set Position Mode", iter->second.id);
+          return false;
+        }
+      }
+      else if (m_OperationMode == VELOCITY_CONTROL_MODE)
+      {
+        if (!m_pDxl_wb->setVelocityControlMode((uint8_t)iter->second.id, &log))
+        {
+          ROS_ERROR("%s", log);
+          ROS_ERROR("ID: '%d', Can't Set Velocity Mode", iter->second.id);
+          return false;
+        }
       }
     }
-    else if (m_OperationMode == VELOCITY_CONTROL_MODE)
-    {
-      if (!m_pDxl_wb->setVelocityControlMode((uint8_t)dxl.second.id, &log))
-      {
-        ROS_ERROR("%s", log);
-        ROS_ERROR("ID: '%d', Can't Set Velocity Mode", dxl.second.id);
-        return false;
-      }
-    }
+    
   }
   
   auto it = m_DxlMap.begin();
@@ -140,7 +138,7 @@ bool CDynamixelHardware::init()
   m_control_items["Goal_Position"] = goal_position;
   m_control_items["Goal_Velocity"] = goal_velocity;
 
-  for (std::map<std::string, DynamixelInfoList>::iterator it = m_DxlMap.begin(); it != m_DxlMap.end(); it++)
+  for (DynamixelInfoMap::iterator it = m_DxlMap.begin(); it != m_DxlMap.end(); it++)
   {
     hardware_interface::ActuatorStateHandle statehandle(it->first, &it->second.present_position, &it->second.present_velocity, 
                                                       &it->second.present_current);
