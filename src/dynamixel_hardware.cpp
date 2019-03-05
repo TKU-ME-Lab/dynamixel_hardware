@@ -7,39 +7,34 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
 {
   m_pDxl_wb = new DynamixelWorkbench;
 
-  if (!nh.hasParam("DynamixelConfigs"))
-  {
-    ROS_WARN("Didn't have DynamixelConfigs parameter");
-    return;
-  }
+  // if (!nh.hasParam("DynamixelConfigs"))
+  // {
+  //   ROS_WARN("Didn't have DynamixelConfigs parameter");
+  //   return;
+  // }
 
   ros::NodeHandle Config_nh(m_private_nh, "DynamixelConfigs");
 
+  ROS_INFO_STREAM("Config ng NameSpace:" + Config_nh.getNamespace());
+
   BOOST_FOREACH(const std::string&motor_name, motor_names)
   {
-    if (nh.hasParam(motor_name))
+    ros::NodeHandle motor_nh(Config_nh, motor_name);
+    int id;
+    if (motor_nh.getParam("ID", id))
     {
-      ros::NodeHandle motor_nh(Config_nh, motor_name);
-      int id;
-      if (motor_nh.getParam("ID", id))
-      {
-        DynamixelInfoList infolist;
-        infolist.id = (uint32_t)id;
-        m_DxlMap[motor_name] = infolist;
-      }
-      else
-      {
-        ROS_WARN_STREAM("Motor:" + motor_name + " didn't have ID");
-      }
+      DynamixelInfoList infolist;
+      infolist.id = (uint32_t)id;
+      m_DxlMap[motor_name] = infolist;
     }
     else
     {
-      ROS_WARN_STREAM("Not found " + motor_name + "in DynamixelConfigs");
+      ROS_WARN_STREAM("Motor:" + motor_name + " didn't have ID");
       continue;
     }
   }
 
-  ROS_INFO_STREAM("Find " + std::to_string(m_DxlMap.size()) + "ID count");
+  ROS_INFO_STREAM("Find " + std::to_string(m_DxlMap.size()) + " ID count");
 
   std::string port;
   int baud_rate;
@@ -96,11 +91,14 @@ bool CDynamixelHardware::init()
   for (DynamixelInfoMap::iterator iter = m_DxlMap.begin(); iter != m_DxlMap.end(); iter++)
   {
     uint16_t model_number = 0;
-    if (m_pDxl_wb->ping((uint8_t)iter->second.id, &model_number, &log))
+    bool result = false;
+    result = m_pDxl_wb->ping((uint8_t)iter->second.id, &model_number, &log);
+
+    if (result == false)
     {
       ROS_ERROR("%s", log);
-      ROS_ERROR("Can't find Dynamixel ID '%d'", iter->second.id);
-      return false;
+      ROS_ERROR("Can't find Dynamixel ID:%d", iter->second.id);
+      return result;
     }
     else
     {
