@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <controller_manager/controller_manager.h>
 
 #include "dynamixel_hardware.h"
 
@@ -19,15 +20,29 @@ int main(int argc, char** argv)
     ROS_INFO_STREAM("Name:" + name);
   }
 
-  CDynamixelHardware dynamixelhardware(nh, pnh, motor_names);
+  CDynamixelHardware dxl_hardware(nh, pnh, motor_names);
+  controller_manager::ControllerManager CM(&dxl_hardware, nh);
+  
+  ros::AsyncSpinner spinner(1);
+  spinner.start();
 
-  if (!dynamixelhardware.init())
+  if (!dxl_hardware.init())
   {
     ROS_FATAL("Init Failed");
     return 0;
   }
 
-  ROS_INFO("Init done");
+  ros::Rate contoroller_rate(50);
+  ros::Time last = ros::Time::now();
+  while(ros::ok())
+  {
+    dxl_hardware.read();
+    ros::Time now = ros::Time::now();
+    CM.update(now, now-last);
+    dxl_hardware.write();
+    last = now;
+    contoroller_rate.sleep();
+  }
   
   return 0;
 }

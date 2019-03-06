@@ -7,15 +7,11 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
 {
   m_pDxl_wb = new DynamixelWorkbench;
 
-  // if (!nh.hasParam("DynamixelConfigs"))
-  // {
-  //   ROS_WARN("Didn't have DynamixelConfigs parameter");
-  //   return;
-  // }
-
   ros::NodeHandle Config_nh(m_private_nh, "DynamixelConfigs");
 
-  ROS_INFO_STREAM("Config ng NameSpace:" + Config_nh.getNamespace());
+  m_dxl_id_array = new uint8_t[motor_names.size()];
+  m_dxl_count = motor_names.size();
+  uint8_t array_index = 0;
 
   BOOST_FOREACH(const std::string&motor_name, motor_names)
   {
@@ -26,6 +22,8 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
       DynamixelInfoList infolist;
       infolist.id = (uint32_t)id;
       m_DxlMap[motor_name] = infolist;
+      m_dxl_id_array[array_index] = (uint8_t)id;
+      array_index++;
     }
     else
     {
@@ -91,18 +89,17 @@ bool CDynamixelHardware::init()
   for (DynamixelInfoMap::iterator iter = m_DxlMap.begin(); iter != m_DxlMap.end(); iter++)
   {
     uint16_t model_number = 0;
-    bool result = false;
-    result = m_pDxl_wb->ping((uint8_t)iter->second.id, &model_number, &log);
 
-    if (result == false)
+    if (!m_pDxl_wb->ping((uint8_t)iter->second.id, &model_number, &log))
     {
       ROS_ERROR("%s", log);
       ROS_ERROR("Can't find Dynamixel ID:%d", iter->second.id);
-      return result;
+      return false;
     }
     else
     {
       ROS_INFO("Name: %s, ID: %d, Model Number: %d", iter->first.c_str(), iter->second.id, model_number);
+      m_pDxl_wb->torqueOff((uint8_t)iter->second.id);
 
       if (m_OperationMode == POSITION_CONTROL_MODE)
       {
@@ -122,19 +119,25 @@ bool CDynamixelHardware::init()
           return false;
         }
       }
+
+      m_pDxl_wb->torqueOn((uint8_t)iter->second.id);
     }
     
   }
   
   auto it = m_DxlMap.begin();
 
-  const ControlItem *goal_position = m_pDxl_wb->getItemInfo(it->second.id, "Goal_Position");
-  if (goal_position == NULL) return false;
-  const ControlItem *goal_velocity = m_pDxl_wb->getItemInfo(it->second.id, "Goal_Velocity");
-  if (goal_velocity == NULL) return false;
+  if (!m_pDxl_wb->addSyncWriteHandler(it->second.id, "Goal_Position", &log))
+  {
+    ROS_ERROR("%s", log);
+    return false;
+  }
 
-  m_control_items["Goal_Position"] = goal_position;
-  m_control_items["Goal_Velocity"] = goal_velocity;
+  if (!m_pDxl_wb->addSyncWriteHandler(it->second.id, "Goal_Velocity", &log))
+  {
+    ROS_ERROR("%s", log);
+    return false;
+  }
 
   for (DynamixelInfoMap::iterator it = m_DxlMap.begin(); it != m_DxlMap.end(); it++)
   {
@@ -172,13 +175,41 @@ void CDynamixelHardware::read()
     it->second.torque_enable = (uint8_t)torque_enable;
     it->second.moving = (uint8_t)moving;
     it->second.present_position = (double)m_pDxl_wb->convertValue2Radian((uint8_t)it->second.id, position);
-    it->second.torque_enable = (double)m_pDxl_wb->convertValue2Velocity((uint8_t)it->second.id, velocity);
-    it->second.torque_enable = (double)m_pDxl_wb->convertValue2Current((int16_t)current);
+    it->second.present_velocity = (double)m_pDxl_wb->convertValue2Velocity((uint8_t)it->second.id, velocity);
+    it->second.present_current = (double)m_pDxl_wb->convertValue2Current((int16_t)current);
   }
   
 }
 
 void CDynamixelHardware::write()
 {
+  int32_t cmds[m_DxlMap.size()];
+  bool result = false;
+  const char* log;
+  if (m_OperationMode == POSITION_CONTROL_MODE)
+  {
+    for (uint8_t index = 0; index < m_dxl_count; index++)
+    {
+      DynamixelInfoMap::iterator iter = m_DxlMap.begin();
 
+      cmds[index] = m_pDxl_wb->convertRadian2Value(m_dxl_id_array[index], iter->second.goal_position);
+
+      iter++;
+    }
+
+    result = m_pDxl_wb->syncWrite(SYNC_WRITE_HANDLER_FOR_GOAL_POSITION, m_dxl_id_array, m_dxl_count, cmds, 1, &log);
+  }
+  else if (m_OperationMode == VELOCITY_CONTROL_MODE)
+  {
+    for (uint8_t index = 0; index < m_dxl_count; index++)
+    {
+      DynamixelInfoMap::iterator iter = m_DxlMap.begin();
+
+      cmds[index] = m_pDxl_wb->convertVelocity2Value(m_dxl_id_array[index], iter->second.goal_velocity);
+
+      iter++;
+    }
+
+    result = m_pDxl_wb->syncWrite(SYNC_WRITE_HANDLER_FOR_GOAL_VELOCITY, m_dxl_id_array, m_dxl_count, cmds, 1, &log);
+  }
 }
