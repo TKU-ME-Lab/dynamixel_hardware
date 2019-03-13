@@ -51,7 +51,10 @@ private:
 
   uint8_t* m_dxl_id_array;
   uint8_t m_dxl_count;
-  //std::vector<DynamixelStateAndCmd> m_DynamixelLists;
+
+  transmission_interface::RobotTransmissions m_robot_transmissions;
+
+  boost::scoped_ptr<transmission_interface::TransmissionInterfaceLoader> m_transmission_loader;
 
   OperationMode m_OperationMode;
   bool m_has_init;

@@ -5,6 +5,21 @@
 CDynamixelHardware::CDynamixelHardware(ros::NodeHandle &nh, ros::NodeHandle &pnh, const std::vector<std::string> motor_names):
 m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
 {
+  try
+  {
+    m_transmission_loader.reset(new transmission_interface::TransmissionInterfaceLoader(this, &m_robot_transmissions));
+  }
+  catch(const std::invalid_argument& ex)
+  {
+    ROS_ERROR_STREAM("Failed to create transmission interface loader. " << ex.what());
+    return;
+  }
+  catch(...)
+  {
+    ROS_ERROR_STREAM("Failed to create transmission interface loader. ");
+    return;
+  }
+
   m_pDxl_wb = new DynamixelWorkbench;
 
   ros::NodeHandle Config_nh(m_private_nh, "DynamixelConfigs");
@@ -54,7 +69,6 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
     ROS_ERROR_STREAM("Port:" + port + ", Baud Rate:" + std::to_string(baud_rate) + ", Begin Failed");
   }
 
-  //ros::NodeHandle dynamixel_config_nh(m_private_nh, "DynamixelConfigs");
   std::string operation_mode;
   if (Config_nh.getParam("operation_mode", operation_mode))
   {
@@ -72,6 +86,8 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
       m_OperationMode = POSITION_CONTROL_MODE;
     }
   }
+
+  
 
   m_valid = true;
 }
@@ -157,6 +173,24 @@ bool CDynamixelHardware::init()
   registerInterface(&m_api);
   registerInterface(&m_avi);
 
+  std::string urdf_string;
+  m_nh.getParam("robot_description", urdf_string);
+  while(urdf_string.empty() && ros::ok()){
+    ROS_INFO_STREAM_ONCE("Waiting for robot_description");
+    m_nh.getParam("robot_description", urdf_string);
+    ros::Duration(0.1).sleep();
+  }
+  
+  transmission_interface::TransmissionParser parser;
+  std::vector<transmission_interface::TransmissionInfo> infos;
+  if (!parser.parse(urdf_string, infos))
+  {
+    ROS_ERROR("Error paring URDF");
+    return;
+  }
+
+  
+
   return true;
 }
 
@@ -178,7 +212,10 @@ void CDynamixelHardware::read()
     it->second.present_velocity = (double)m_pDxl_wb->convertValue2Velocity((uint8_t)it->second.id, velocity);
     it->second.present_current = (double)m_pDxl_wb->convertValue2Current((int16_t)current);
   }
-  
+  if (m_robot_transmissions.get<transmission_interface::ActuatorToJointStateInterface>())
+  {
+    m_robot_transmissions.get<transmission_interface::ActuatorToJointStateInterface>()->propagate();
+  }
 }
 
 void CDynamixelHardware::write()
@@ -211,5 +248,14 @@ void CDynamixelHardware::write()
     }
 
     result = m_pDxl_wb->syncWrite(SYNC_WRITE_HANDLER_FOR_GOAL_VELOCITY, m_dxl_id_array, m_dxl_count, cmds, 1, &log);
+  }
+
+  if (m_robot_transmissions.get<transmission_interface::JointToActuatorPositionInterface>())
+  {
+    m_robot_transmissions.get<transmission_interface::JointToActuatorPositionInterface>()->propagate();
+  }
+  if (m_robot_transmissions.get<transmission_interface::JointToActuatorVelocityInterface>())
+  {
+    m_robot_transmissions.get<transmission_interface::JointToActuatorVelocityInterface>()->propagate();
   }
 }
