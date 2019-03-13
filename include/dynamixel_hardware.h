@@ -11,6 +11,9 @@
 
 #include <dynamixel_workbench_toolbox/dynamixel_workbench.h>
 
+#define SYNC_WRITE_HANDLER_FOR_GOAL_POSITION 0
+#define SYNC_WRITE_HANDLER_FOR_GOAL_VELOCITY 1
+
 typedef enum{
   POSITION_CONTROL_MODE, VELOCITY_CONTROL_MODE
 }OperationMode;
@@ -28,10 +31,12 @@ typedef struct{
   //double goal_current;
 }DynamixelInfoList;
 
-
 class CDynamixelHardware: public hardware_interface::RobotHW
 {
 private:
+  typedef std::map<std::string, DynamixelInfoList> DynamixelInfoMap;
+  typedef std::map<std::string, const ControlItem*> ControlItemMap;
+
   ros::NodeHandle m_nh;
   ros::NodeHandle m_private_nh;
   
@@ -41,16 +46,20 @@ private:
   //hardware_interface::EffortActuatorInterface m_aei;
   
   DynamixelWorkbench* m_pDxl_wb;
-  std::map<std::string, DynamixelInfoList> m_DxlMap;
-  std::map<std::string, const ControlItem*> m_control_items;
+  DynamixelInfoMap m_DxlMap;
+  ControlItemMap m_control_items;
 
-  uint8_t m_dxl_id[10];
+  uint8_t* m_dxl_id_array;
   uint8_t m_dxl_count;
-  //std::vector<DynamixelStateAndCmd> m_DynamixelLists;
+
+  transmission_interface::RobotTransmissions m_robot_transmissions;
+
+  boost::scoped_ptr<transmission_interface::TransmissionInterfaceLoader> m_transmission_loader;
 
   OperationMode m_OperationMode;
   bool m_has_init;
   bool m_valid;
+  
 public:
   CDynamixelHardware(ros::NodeHandle&, ros::NodeHandle&, const std::vector<std::string>);
 
