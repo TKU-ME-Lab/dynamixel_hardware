@@ -1,5 +1,8 @@
 <launch>
-  
+  <rosparam file="$(find dynamixel_hardware)/config/manipulator_controller.yaml" command="load"/>
+
+  <param name="robot_description" textfile="$(find mobilerobot_description)/urdf/mobilerobot.urdf.xacro"/>
+
   <node name="test" pkg="dynamixel_hardware" type="test_node"
         required="true" output="screen" args="joint1
                                              joint2
@@ -11,4 +14,9 @@
 
     <rosparam command="load" file="$(find dynamixel_hardware)/config/dynamixel_configs.yaml"/>
   </node>
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+	    output="screen" args="velocity_trajectory_controller"/>
 </launch>
