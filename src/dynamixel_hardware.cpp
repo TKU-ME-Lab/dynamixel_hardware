@@ -173,21 +173,21 @@ bool CDynamixelHardware::init()
   registerInterface(&m_api);
   registerInterface(&m_avi);
 
-  std::string urdf_string;
-  m_nh.getParam("robot_description", urdf_string);
-  while(urdf_string.empty() && ros::ok()){
-    ROS_INFO_STREAM_ONCE("Waiting for robot_description");
-    m_nh.getParam("robot_description", urdf_string);
-    ros::Duration(0.1).sleep();
-  }
+  // std::string urdf_string;
+  // m_nh.getParam("robot_description", urdf_string);
+  // while(urdf_string.empty() && ros::ok()){
+  //   ROS_INFO_STREAM_ONCE("Waiting for robot_description");
+  //   m_nh.getParam("robot_description", urdf_string);
+  //   ros::Duration(0.1).sleep();
+  // }
   
-  transmission_interface::TransmissionParser parser;
-  std::vector<transmission_interface::TransmissionInfo> infos;
-  if (!parser.parse(urdf_string, infos))
-  {
-    ROS_ERROR("Error paring URDF");
-    return;
-  }
+  // transmission_interface::TransmissionParser parser;
+  // std::vector<transmission_interface::TransmissionInfo> infos;
+  // if (!parser.parse(urdf_string, infos))
+  // {
+  //   ROS_ERROR("Error paring URDF");
+  //   return;
+  // }
 
   
 
