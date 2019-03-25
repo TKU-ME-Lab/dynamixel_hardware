@@ -213,7 +213,7 @@ bool CDynamixelHardware::init()
   for (DynamixelInfoMap::iterator it = m_DxlMap.begin(); it != m_DxlMap.end(); it++)
   {
     hardware_interface::ActuatorStateHandle statehandle(it->first, &it->second.present_position, &it->second.present_velocity, 
-                                                      &it->second.present_current);
+                                                    &it->second.present_current);
     ROS_INFO_STREAM("Create ActuatorStateHandle, Name: " + statehandle.getName());
     m_asi.registerHandle(statehandle);
     hardware_interface::ActuatorHandle position_handle(statehandle, &it->second.goal_position);
