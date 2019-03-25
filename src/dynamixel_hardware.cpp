@@ -87,8 +87,6 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
     }
   }
 
-  
-
   m_valid = true;
 }
 
@@ -157,21 +155,21 @@ bool CDynamixelHardware::init()
 
   for (DynamixelInfoMap::iterator it = m_DxlMap.begin(); it != m_DxlMap.end(); it++)
   {
-    hardware_interface::ActuatorStateHandle statehandle(it->first, &it->second.present_position, &it->second.present_velocity, 
+    hardware_interface::JointStateHandle statehandle(it->first, &it->second.present_position, &it->second.present_velocity, 
                                                       &it->second.present_current);
-    ROS_INFO_STREAM("Create ActuatorStateHandle, Name: " + statehandle.getName());
-    m_asi.registerHandle(statehandle);
-    hardware_interface::ActuatorHandle position_handle(statehandle, &it->second.goal_position);
-    m_api.registerHandle(position_handle);
-    hardware_interface::ActuatorHandle velocity_handle(statehandle, &it->second.goal_velocity);
-    m_avi.registerHandle(velocity_handle);
+    ROS_INFO_STREAM("Create JointStateHandle, Name: " + statehandle.getName());
+    m_jsi.registerHandle(statehandle);
+    hardware_interface::JointHandle position_handle(statehandle, &it->second.goal_position);
+    m_pji.registerHandle(position_handle);
+    hardware_interface::JointHandle velocity_handle(statehandle, &it->second.goal_velocity);
+    m_vji.registerHandle(velocity_handle);
     //hardware_interface::ActuatorHandle current_handle(statehandle, &dynamixel->goal_current);
     //m_aei.registerHandle(current_handle)
   }
 
-  registerInterface(&m_asi);
-  registerInterface(&m_api);
-  registerInterface(&m_avi);
+  registerInterface(&m_jsi);
+  registerInterface(&m_pji);
+  registerInterface(&m_vji);
 
   std::string urdf_string;
   m_nh.getParam("robot_description", urdf_string);
@@ -186,7 +184,7 @@ bool CDynamixelHardware::init()
   if (!parser.parse(urdf_string, infos))
   {
     ROS_ERROR("Error paring URDF");
-    return;
+    return false;
   }
 
   

@@ -40,9 +40,9 @@ private:
   ros::NodeHandle m_nh;
   ros::NodeHandle m_private_nh;
   
-  hardware_interface::ActuatorStateInterface m_asi;
-  hardware_interface::PositionActuatorInterface m_api;
-  hardware_interface::VelocityActuatorInterface m_avi;
+  hardware_interface::JointStateInterface m_jsi;
+  hardware_interface::PositionJointInterface m_pji;
+  hardware_interface::VelocityJointInterface m_vji;
   //hardware_interface::EffortActuatorInterface m_aei;
   
   DynamixelWorkbench* m_pDxl_wb;
