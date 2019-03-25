@@ -87,63 +87,6 @@ m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
     }
   }
 
-  std::string urdf_string;
-  m_nh.getParam("robot_description", urdf_string);
-  while(urdf_string.empty() && ros::ok()){
-    ROS_INFO_STREAM_ONCE("Waiting for robot_description");
-    m_nh.getParam("robot_description", urdf_string);
-    ros::Duration(0.1).sleep();
-  }
-  
-  transmission_interface::TransmissionParser parser;
-  std::vector<transmission_interface::TransmissionInfo> infos;
-  if (!parser.parse(urdf_string, infos))
-  {
-    ROS_ERROR("Error paring URDF");
-    return;
-  }  
-  
-  BOOST_FOREACH(const transmission_interface::TransmissionInfo& info, infos)
-  {
-    bool found_some = false;
-    bool found_all  = true;
-
-    std::vector<std::string> actuator_names;
-    for (DynamixelInfoMap::iterator iter = m_DxlMap.begin(); iter != m_DxlMap.end(); iter++)
-    {
-      actuator_names.push_back(iter->first);
-    }
-
-    BOOST_FOREACH(const transmission_interface::ActuatorInfo& actuator_info, info.actuators_)
-    {
-      if (std::find(actuator_names.begin(), actuator_names.end(), actuator_info.name_) != actuator_names.end())
-      {
-        found_some = true;
-      }
-      else
-      {
-        found_all = false;
-      }
-
-      if (found_all)
-      {
-        if (!m_transmission_loader->load(info))
-        {
-          ROS_ERROR_STREAM("Error loading transmission: " + info.name_);
-          return;
-        }
-        else
-        {
-          ROS_INFO_STREAM("Loaded transmission: " + info.name_);
-        }
-      }
-      else if (found_some)
-      {
-          ROS_ERROR_STREAM("Do not support transmissions that contain only some Dynamixel: " + info.name_);
-      }
-    }
-  }
-
   m_valid = true;
 }
 
@@ -212,21 +155,39 @@ bool CDynamixelHardware::init()
 
   for (DynamixelInfoMap::iterator it = m_DxlMap.begin(); it != m_DxlMap.end(); it++)
   {
-    hardware_interface::ActuatorStateHandle statehandle(it->first, &it->second.present_position, &it->second.present_velocity, 
-                                                    &it->second.present_current);
-    ROS_INFO_STREAM("Create ActuatorStateHandle, Name: " + statehandle.getName());
-    m_asi.registerHandle(statehandle);
-    hardware_interface::ActuatorHandle position_handle(statehandle, &it->second.goal_position);
-    m_api.registerHandle(position_handle);
-    hardware_interface::ActuatorHandle velocity_handle(statehandle, &it->second.goal_velocity);
-    m_avi.registerHandle(velocity_handle);
+    hardware_interface::JointStateHandle statehandle(it->first, &it->second.present_position, &it->second.present_velocity, 
+                                                      &it->second.present_current);
+    ROS_INFO_STREAM("Create JointStateHandle, Name: " + statehandle.getName());
+    m_jsi.registerHandle(statehandle);
+    hardware_interface::JointHandle position_handle(statehandle, &it->second.goal_position);
+    m_pji.registerHandle(position_handle);
+    hardware_interface::JointHandle velocity_handle(statehandle, &it->second.goal_velocity);
+    m_vji.registerHandle(velocity_handle);
     //hardware_interface::ActuatorHandle current_handle(statehandle, &dynamixel->goal_current);
     //m_aei.registerHandle(current_handle)
   }
 
-  registerInterface(&m_asi);
-  registerInterface(&m_api);
-  registerInterface(&m_avi);
+  registerInterface(&m_jsi);
+  registerInterface(&m_pji);
+  registerInterface(&m_vji);
+
+  std::string urdf_string;
+  m_nh.getParam("robot_description", urdf_string);
+  while(urdf_string.empty() && ros::ok()){
+    ROS_INFO_STREAM_ONCE("Waiting for robot_description");
+    m_nh.getParam("robot_description", urdf_string);
+    ros::Duration(0.1).sleep();
+  }
+  
+  transmission_interface::TransmissionParser parser;
+  std::vector<transmission_interface::TransmissionInfo> infos;
+  if (!parser.parse(urdf_string, infos))
+  {
+    ROS_ERROR("Error paring URDF");
+    return false;
+  }
+
+  
 
   return true;
 }
