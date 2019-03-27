@@ -1,8 +1,8 @@
 <launch>
   <rosparam file="$(find dynamixel_hardware)/config/manipulator_controller.yaml" command="load"/>
 
-  <param name="robot_description" textfile="$(find mobilerobot_description)/urdf/mobilerobot.urdf.xacro"/>
-
+  <param name="robot_description" textfile="$(find mobilerobot_description)/urdf/mobilerobot.urdf"/>
+  
   <node name="test" pkg="dynamixel_hardware" type="test_node"
         required="true" output="screen" args="joint1
                                              joint2

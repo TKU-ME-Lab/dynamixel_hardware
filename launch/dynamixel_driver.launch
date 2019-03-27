@@ -1,0 +1,13 @@
+<launch>
+  <node name="dynamixel_hardware_node" pkg="dynamixel_hardware" type="dynamixel_hardware_node"
+        required="true" output="screen" args="joint1
+                                             joint2
+                                             joint3
+                                             joint4
+                                             joint5
+                                             joint6
+                                             joint7">
+
+    <rosparam command="load" file="$(find dynamixel_hardware)/config/dynamixel_configs.yaml"/>
+  </node>
+</launch>
