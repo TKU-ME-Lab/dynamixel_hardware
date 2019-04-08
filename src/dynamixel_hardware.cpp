@@ -2,6 +2,46 @@
 #include <yaml-cpp/yaml.h>
 #include <boost/foreach.hpp>
 
+bool CDynamixelHardware::Service_touqueOnOff_Callback(dynamixel_hardware_msgs::TorqueOnOff::Request& req, dynamixel_hardware_msgs::TorqueOnOff::Response& res)
+{
+  bool result = 0;
+  const char* log;
+  
+  if (req.command == true)
+  {
+    for (DynamixelInfoMap::iterator iter = m_DxlMap.begin(); iter != m_DxlMap.end(); iter++)
+    { 
+      ROS_INFO_STREAM("Start Turn On Motor" + std::to_string(iter->second.id));
+      result = m_pDxl_wb->torque((uint8_t)iter->second.id, 1, &log);
+      if (result == 0)
+      {
+        ROS_INFO("Failed Turn On Motor");
+        ROS_ERROR("%s", log);
+        res.result = result;
+        return false;
+      }
+    }
+  }
+  else
+  {
+    for (DynamixelInfoMap::iterator iter = m_DxlMap.begin(); iter != m_DxlMap.end(); iter++)
+    {
+      ROS_INFO_STREAM("Start Turn Off Motor" + std::to_string(iter->second.id));   
+      result = m_pDxl_wb->torque((uint8_t)iter->second.id, 0, &log);
+      if (result == 0)
+      {
+        ROS_INFO("Failed Turn Off Motor");
+        ROS_ERROR("%s", log);
+        res.result = result;
+        return false;
+      }
+    }
+  }
+  
+  return true;
+}
+
+
 CDynamixelHardware::CDynamixelHardware(ros::NodeHandle &nh, ros::NodeHandle &pnh, const std::vector<std::string> motor_names):
 m_nh(nh), m_private_nh(pnh), m_has_init(false), m_valid(false)
 {
@@ -136,7 +176,6 @@ bool CDynamixelHardware::init()
 
       m_pDxl_wb->torqueOn((uint8_t)iter->second.id);
     }
-    
   }
   
   auto it = m_DxlMap.begin();
@@ -187,7 +226,7 @@ bool CDynamixelHardware::init()
     return false;
   }
 
-  
+  m_ServiceServer_touqueOnOff = m_nh.advertiseService(ros::this_node::getName() + "/torque", &CDynamixelHardware::Service_touqueOnOff_Callback , this);
 
   return true;
 }

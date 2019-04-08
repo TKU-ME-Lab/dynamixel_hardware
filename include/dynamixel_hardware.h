@@ -8,6 +8,7 @@
 #include <boost/scoped_array.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <pluginlib/class_loader.hpp>
+#include <dynamixel_hardware_msgs/TorqueOnOff.h>
 
 #include <dynamixel_workbench_toolbox/dynamixel_workbench.h>
 
@@ -52,6 +53,8 @@ private:
   uint8_t* m_dxl_id_array;
   uint8_t m_dxl_count;
 
+  ros::ServiceServer m_ServiceServer_touqueOnOff;
+
   transmission_interface::RobotTransmissions m_robot_transmissions;
 
   boost::scoped_ptr<transmission_interface::TransmissionInterfaceLoader> m_transmission_loader;
@@ -59,6 +62,9 @@ private:
   OperationMode m_OperationMode;
   bool m_has_init;
   bool m_valid;
+
+  bool Service_touqueOnOff_Callback(dynamixel_hardware_msgs::TorqueOnOff::Request&, 
+                                    dynamixel_hardware_msgs::TorqueOnOff::Response&);
   
 public:
   CDynamixelHardware(ros::NodeHandle&, ros::NodeHandle&, const std::vector<std::string>);

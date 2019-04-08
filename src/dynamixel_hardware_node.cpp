@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     return 0;
   }
 
-  ros::Rate contoroller_rate(50);
+  ros::Rate contoroller_rate(1000);
   ros::Time last = ros::Time::now();
   while(ros::ok())
   {

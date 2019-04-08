@@ -14,6 +14,7 @@ find_package(catkin REQUIRED
   hardware_interface
   transmission_interface
   controller_manager
+  dynamixel_hardware_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -154,6 +155,7 @@ add_library(cdynamixel_hardware
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(test_node src/test.cpp)
 add_executable(dynamixel_hardware_node src/dynamixel_hardware_node.cpp)
+add_executable(dynamixel_test_node tool/dynamixel_test.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -179,6 +181,10 @@ target_link_libraries(test_node
 target_link_libraries(dynamixel_hardware_node
   ${catkin_LIBRARIES}
   cdynamixel_hardware
+)
+
+target_link_libraries(dynamixel_test_node
+  ${catkin_LIBRARIES}
 )
 
 #############
